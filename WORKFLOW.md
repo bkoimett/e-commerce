@@ -147,6 +147,12 @@ size), RLS re-verification as `anon`, and production deploy.
 
 ## 6. Issues
 
+> Issue numbers below are the real GitHub numbers for Milestones 1–2
+> (#1–#8). Issues for Milestones 3–8 have **not been opened yet** — the
+> numbers shown there are placeholders and will shift to whatever numbers
+> GitHub assigns when the issues are actually created. Don't reference a
+> Milestone 3+ issue number in a commit until that issue exists.
+
 ### Milestone 1: Project Setup & Infrastructure
 
 **#1 — Initialize Next.js project with TypeScript and Tailwind**
@@ -164,28 +170,28 @@ Connect the repo to Vercel, configure environment variables per
 environment (preview/production), and confirm a clean deploy of the
 scaffold.
 
-**#30 — Set up separate dev/staging/production Supabase environments**
+**#4 — Set up separate dev/staging/production Supabase environments**
 Create three separate Supabase projects per `design.md` §9, each with its
 own env values, so staging can safely test IntaSend's sandbox without
 touching production data.
 
-**#31 — Gather client brand inputs and establish design tokens**
+**#5 — Gather client brand inputs and establish design tokens**
 Get logo/brand colors and real product photography from the client;
 define the color/type/layout token system per `design.md` §14, before any
 storefront UI is built. Blocks Milestone 5.
 
 ### Milestone 2: Database & Auth Foundation
 
-**#4 — Apply and verify core schema with RLS**
+**#6 — Apply and verify core schema with RLS**
 Apply the full schema from `design.md` §2 and confirm every RLS policy in
 §4 behaves as intended — test as both `anon` and an authenticated admin,
 not just as the service role.
 
-**#5 — Set up Supabase Auth for admin login**
+**#7 — Set up Supabase Auth for admin login**
 Configure Supabase Auth, provision the owner's admin account manually (no
 public signup), and build the `/admin/login` page.
 
-**#6 — Add auth middleware to protect admin routes**
+**#8 — Add auth middleware to protect admin routes**
 Ensure every route under `(admin)` requires a valid authenticated session,
 redirecting to `/admin/login` otherwise.
 
