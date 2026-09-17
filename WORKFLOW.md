@@ -164,6 +164,16 @@ Connect the repo to Vercel, configure environment variables per
 environment (preview/production), and confirm a clean deploy of the
 scaffold.
 
+**#30 — Set up separate dev/staging/production Supabase environments**
+Create three separate Supabase projects per `design.md` §9, each with its
+own env values, so staging can safely test IntaSend's sandbox without
+touching production data.
+
+**#31 — Gather client brand inputs and establish design tokens**
+Get logo/brand colors and real product photography from the client;
+define the color/type/layout token system per `design.md` §14, before any
+storefront UI is built. Blocks Milestone 5.
+
 ### Milestone 2: Database & Auth Foundation
 
 **#4 — Apply and verify core schema with RLS**
@@ -211,9 +221,14 @@ List active/scheduled/expired promotions with a manual override to end one
 early (`is_active` toggle).
 
 **#14 — Decide and implement the promotion tie-break rule**
-Resolve the open decision flagged in `design.md` §3 and §8 and
+Resolve the open decision flagged in `design.md` §3 and §15 and
 `getEffectivePrice.ts`'s TODO: define what happens when multiple
 promotions could apply to the same product, and implement it.
+
+**#32 — Add cache invalidation on promotion/product save**
+Call `revalidatePath`/`revalidateTag` for affected storefront pages when a
+promotion or product is saved, per `design.md` §10 — without this, the
+owner's changes won't visibly take effect.
 
 ### Milestone 5: Storefront — Browsing & Catalog
 
@@ -252,6 +267,19 @@ Fill in the `IntaSendProvider` TODOs in `src/lib/payments/intasend.ts`:
 **#23 — Build order confirmation page**
 Post-payment confirmation screen shown to the customer.
 
+**#33 — Implement atomic stock reservation at checkout**
+Decrement `stock_quantity` with a conditional atomic update per
+`design.md` §8, failing the checkout cleanly if stock ran out between
+adding to cart and paying.
+
+**#34 — Make the payment webhook idempotent**
+Ensure `verifyWebhook` handling is safe to run twice for the same event —
+check `payment_status` before applying a change, per `design.md` §8.
+
+**#35 — Add unit tests for pricing and checkout totals**
+Cover `getEffectivePrice` and the checkout total calculation with tests,
+per `design.md` §11 — the one place a silent bug costs real money.
+
 ### Milestone 7: Order Management & Notifications
 
 **#24 — Build admin order list and detail view**
@@ -259,8 +287,9 @@ List orders with contact info, items, total, payment status; detail view
 per order.
 
 **#25 — Choose and integrate a notification provider**
-Resolve the open decision in `design.md` §8: pick an email/SMS provider
-and send order confirmations on successful payment.
+Resolve the open decision in `design.md` §15: pick an email/SMS provider
+and send order confirmations on successful payment. Africa's Talking is
+the suggested option if SMS delivery to Kenyan numbers is prioritized.
 
 ### Milestone 8: Polish, QA & Launch
 
@@ -278,3 +307,16 @@ regressions introduced during feature work.
 **#29 — Production deploy and smoke test**
 Deploy to production, place one real end-to-end test order (M-Pesa and
 card), confirm it appears correctly in the admin dashboard.
+
+**#36 — Add privacy policy, terms of service, and returns/refund pages**
+Publish the legal pages required under Kenya's Data Protection Act and
+for payment provider approval, per `design.md` §13.
+
+**#37 — Add SEO metadata, sitemap, and structured data**
+Per-page metadata via Next.js's metadata API, a sitemap, `robots.txt`, and
+`schema.org` Product/Offer structured data, per `design.md` §12.
+
+**#38 — Set up error monitoring and webhook failure alerting**
+Add error tracking (e.g. Sentry) covering the storefront and, critically,
+the payment webhook handler, per `design.md` §11 — a silently failing
+webhook must not go unnoticed.

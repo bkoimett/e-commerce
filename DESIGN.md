@@ -174,9 +174,113 @@ See the repository tree — key conventions:
   logic.
 - `supabase/migrations/` — SQL migrations, source of truth for schema.
 
-## 8. Open decisions to make explicit before/while building
+## 8. Concurrency & idempotency
+
+Two problems that are cheap to design for now and expensive to retrofit
+after launch:
+
+- **Stock races.** Two customers can attempt to buy the last unit of a
+  variant at the same moment. Never read `stock_quantity`, check it in
+  application code, then write — that has a race window. Decrement
+  atomically and conditionally in the same statement, e.g.:
+  ```sql
+  update product_variants
+  set stock_quantity = stock_quantity - :qty
+  where id = :variant_id and stock_quantity >= :qty;
+  ```
+  If the update affects zero rows, the item is out of stock — fail the
+  checkout for that item before charging anything.
+- **Idempotent webhooks.** Payment providers (including IntaSend) can and
+  will redeliver the same webhook event more than once. `verifyWebhook`
+  must be safe to process the same event twice: check the order's current
+  `payment_status` before applying a change (e.g. don't re-run
+  fulfillment logic if it's already `paid`), and treat
+  `payment_reference` as the idempotency key.
+
+## 9. Environments
+
+Use three separate Supabase projects — not just Vercel's preview/production
+split pointing at one database:
+
+- **Development** — local/experimental work, safe to reset.
+- **Staging** — mirrors production schema, used for testing payment
+  webhooks against IntaSend's sandbox before anything touches real money.
+- **Production** — the live store.
+
+Each environment gets its own `.env` values (Supabase URL/keys, payment
+provider keys). Never point a Vercel preview deployment at the production
+Supabase project.
+
+## 10. Cache invalidation
+
+If storefront pages use ISR, a promotion or product change made in the
+dashboard must trigger an explicit `revalidatePath` (or `revalidateTag`)
+call for the affected pages at save time — not rely solely on a timed
+revalidation window. Otherwise the owner changes a promotion and it
+doesn't appear to work, which undermines the entire "she can do this
+herself" goal.
+
+## 11. Observability
+
+- **Error tracking** (e.g. Sentry) on both the storefront and the payment
+  webhook handler specifically — a webhook that silently throws leaves an
+  order stuck at `pending` forever with nobody notified.
+- **Testing**: at minimum, unit tests for `getEffectivePrice` and the
+  checkout total calculation. This is the one place a silent bug costs
+  real money, so it's worth testing even where nothing else in v1 has
+  test coverage.
+
+## 12. SEO
+
+- Use Next.js's metadata API for per-product and per-category pages
+  (title, description, Open Graph image from the product's own images).
+- Generate a sitemap and `robots.txt`.
+- Add `schema.org` Product/Offer structured data on product pages —
+  meaningful for a real retail business's organic search visibility, not
+  just a nice-to-have.
+
+## 13. Legal & compliance
+
+- Kenya's Data Protection Act (2019) applies, since checkout collects
+  phone numbers and physical addresses. Publish a privacy policy.
+- Publish terms of service and a returns/refund policy — standard
+  expectations for a real store, and typically required for payment
+  provider approval (IntaSend/Pesapal) as well.
+
+## 14. Frontend design principles
+
+The goal is a storefront that reads as built for this specific brand and
+market, not as a generic AI-templated page. Concretely:
+
+- Get real brand inputs from the client before building UI: logo, brand
+  colors if she has them, and actual product photography — not stock
+  images or lorem ipsum. If she has none of this yet, treat that as a
+  task to complete before frontend work starts (see WORKFLOW.md's design
+  token issue).
+- Choose a deliberate 4–6 color palette and type system for this brand
+  specifically. Avoid the current AI-default looks: warm cream + terracotta,
+  near-black + single neon accent, and the "SaaS card kit" (identical
+  rounded cards, uniform soft grey shadow on everything).
+- Avoid template chrome regardless of subject: tracked-out ALL-CAPS eyebrow
+  labels above every heading, arrows (→) appended to every button/link,
+  numbered markers (01/02/03) where content isn't actually a sequence.
+- Use motion sparingly — one deliberate moment, not fade-and-slide-up
+  entrances on every card.
+- Include local trust signals appropriate to the market: an M-Pesa payment
+  badge, a WhatsApp click-to-chat contact option, and prices formatted as
+  KES via `Intl.NumberFormat('en-KE', { style: 'currency', currency: 'KES' })`.
+- Write real empty/error/loading states in the interface's own voice
+  ("Your cart is empty — browse phones", not a bare spinner or generic
+  "Something went wrong").
+- Build to a quality floor without announcing it: responsive down to
+  mobile (majority of traffic), visible keyboard focus, reduced motion
+  respected.
+
+## 15. Open decisions to make explicit before/while building
 
 - Exact tie-break rule when multiple promotions could apply to one product.
-- Email/SMS provider for order confirmations (not yet chosen).
+- Email/SMS provider for order confirmations. Africa's Talking is the
+  standard local option for reliable SMS delivery to Safaricom/Airtel
+  numbers if SMS is chosen over (or alongside) email.
 - Whether categories can be more than 2 levels deep in practice (schema
   supports arbitrary nesting, but UI should probably cap it).

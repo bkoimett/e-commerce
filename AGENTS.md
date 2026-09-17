@@ -43,6 +43,22 @@ belongs to.
 7. **Keep the storefront server-rendered where possible.** Reach for
    client components only where interactivity is genuinely needed (cart,
    variant selector, dashboard forms) — not by default.
+8. **Never decrement stock with read-then-write.** Use an atomic
+   conditional update (`design.md` §8) so two simultaneous checkouts for
+   the last unit can't both succeed.
+9. **Treat every payment webhook as possibly a duplicate delivery.**
+   Check the order's current `payment_status` before applying a change —
+   see `design.md` §8. Don't assume a webhook fires exactly once.
+10. **Invalidate the cache when data that affects pricing/promotions
+    changes.** A promotion or product save must call `revalidatePath`/
+    `revalidateTag` for the pages it affects (`design.md` §10) — don't
+    rely on a timed ISR window alone.
+11. **Don't build storefront UI on generic defaults.** Get real brand
+    colors and product photography from the client first; avoid the
+    templated AI-design patterns listed in `design.md` §14 (warm
+    cream+terracotta or dark+neon palettes, ALL-CAPS eyebrows, arrow-suffixed
+    buttons, numbered markers on non-sequential content, fade-in-on-every-card
+    motion).
 
 ## Conventions
 
@@ -80,6 +96,11 @@ A feature isn't done until:
 - [ ] Any payment-related code goes through `src/lib/payments/`'s
       interface, not a provider SDK directly.
 - [ ] Zod validation exists for any new user input, client and server side.
+- [ ] Any stock-decrementing code uses an atomic conditional update, not
+      read-then-write.
+- [ ] Any webhook handler is safe to run twice on the same event.
+- [ ] Any change to product/promotion data that's cached (ISR) triggers
+      the relevant revalidation.
 
 ## What NOT to do
 
