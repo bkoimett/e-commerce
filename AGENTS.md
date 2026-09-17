@@ -1,9 +1,18 @@
-# agents.md — Instructions for AI agents building this repo
+# Instructions for AI agents building this repo
 
-Read this together with `PRD.md` (what to build) and `design.md`
-(architecture/schema decisions already made). Don't re-derive architecture
-that's already decided in `design.md` — follow it, and if you think a
-decision there is wrong, say so explicitly rather than silently diverging.
+Read this together with `PRD.md` (what to build), `design.md`
+(architecture/schema decisions already made), and `WORKFLOW.md` (git flow,
+milestones, and issues). Don't re-derive architecture that's already
+decided in `design.md` — follow it, and if you think a decision there is
+wrong, say so explicitly rather than silently diverging.
+
+**Before making any change, and again before committing or pushing, read
+`WORKFLOW.md`.** It defines branch naming, commit message format, how to
+group commits by issue, and the PR description block (with closing
+keywords) to produce once an issue's work is ready to push. Every commit
+in this repo should reference the GitHub issue it belongs to, per that
+file's format — don't commit without knowing which issue number a change
+belongs to.
 
 ## Ground rules
 
