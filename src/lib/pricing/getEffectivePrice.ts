@@ -1,12 +1,6 @@
 // The single source of truth for "what does this cost right now."
 // Used by both the storefront display and the checkout total calculation
 // so the two can never disagree (see design.md §3, agents.md rule #4).
-//
-// TODO: implement the tie-break rule when multiple promotions could apply
-// (see design.md §8 "Open decisions"). Suggested default until decided:
-// product-level promotion beats category-level beats storewide, and if
-// two promotions tie at the same specificity, apply whichever gives the
-// customer the larger discount.
 
 import type { Product, ProductVariant, Promotion } from "@/types/database";
 
@@ -14,6 +8,24 @@ export interface EffectivePriceResult {
   originalPrice: number;
   finalPrice: number;
   appliedPromotion: Promotion | null;
+}
+
+/**
+ * Tie-break rule for multiple applicable promotions:
+ * 1. Higher specificity wins: product > category > storewide
+ * 2. Within same specificity, the larger discount wins
+ */
+function promotionSpecificity(promo: Promotion): number {
+  if (promo.applies_to === "product") return 3;
+  if (promo.applies_to === "category") return 2;
+  return 1; // "all"
+}
+
+function discountAmount(promo: Promotion, originalPrice: number): number {
+  if (promo.discount_type === "percentage") {
+    return originalPrice * (promo.discount_value / 100);
+  }
+  return promo.discount_value;
 }
 
 export function getEffectivePrice(
@@ -39,26 +51,22 @@ export function getEffectivePrice(
     return { originalPrice, finalPrice: originalPrice, appliedPromotion: null };
   }
 
-  // TODO: replace with the documented tie-break rule once decided.
-  // Placeholder: pick whichever applicable promotion gives the biggest discount.
+  // Tie-break: highest specificity first, then largest discount
   const best = applicable.reduce((biggest, promo) => {
-    const discount =
-      promo.discount_type === "percentage"
-        ? originalPrice * (promo.discount_value / 100)
-        : promo.discount_value;
-    const biggestDiscount =
-      biggest.discount_type === "percentage"
-        ? originalPrice * (biggest.discount_value / 100)
-        : biggest.discount_value;
-    return discount > biggestDiscount ? promo : biggest;
+    const promoSpec = promotionSpecificity(promo);
+    const biggestSpec = promotionSpecificity(biggest);
+
+    if (promoSpec !== biggestSpec) {
+      return promoSpec > biggestSpec ? promo : biggest;
+    }
+
+    // Same specificity: pick larger discount
+    return discountAmount(promo, originalPrice) > discountAmount(biggest, originalPrice)
+      ? promo
+      : biggest;
   });
 
-  const discountAmount =
-    best.discount_type === "percentage"
-      ? originalPrice * (best.discount_value / 100)
-      : best.discount_value;
-
-  const finalPrice = Math.max(0, originalPrice - discountAmount);
+  const finalPrice = Math.max(0, originalPrice - discountAmount(best, originalPrice));
 
   return { originalPrice, finalPrice, appliedPromotion: best };
 }
