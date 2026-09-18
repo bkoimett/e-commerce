@@ -3,6 +3,13 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { revalidatePath } from "next/cache";
 
+const STOREFRONT_PATHS = ["/", "/category/[slug]", "/product/[slug]"];
+
+function revalidateStorefront() {
+  STOREFRONT_PATHS.forEach((p) => revalidatePath(p));
+  revalidatePath("/admin/categories");
+}
+
 export async function createCategory(
   name: string,
   slug: string,
@@ -16,7 +23,7 @@ export async function createCategory(
     .single();
 
   if (error) throw new Error(error.message);
-  revalidatePath("/admin/categories");
+  revalidateStorefront();
   return data;
 }
 
@@ -35,7 +42,7 @@ export async function updateCategory(
     .single();
 
   if (error) throw new Error(error.message);
-  revalidatePath("/admin/categories");
+  revalidateStorefront();
   return data;
 }
 
@@ -44,5 +51,5 @@ export async function deleteCategory(id: string) {
   const { error } = await supabase.from("categories").delete().eq("id", id);
 
   if (error) throw new Error(error.message);
-  revalidatePath("/admin/categories");
+  revalidateStorefront();
 }

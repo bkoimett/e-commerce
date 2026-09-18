@@ -4,6 +4,13 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { revalidatePath } from "next/cache";
 import { productSchema, type ProductInput } from "@/lib/validations/product";
 
+const STOREFRONT_PATHS = ["/", "/category/[slug]", "/product/[slug]"];
+
+function revalidateStorefront() {
+  STOREFRONT_PATHS.forEach((p) => revalidatePath(p));
+  revalidatePath("/admin/products");
+}
+
 export async function createProduct(input: ProductInput) {
   const parsed = productSchema.parse(input);
   const supabase = createAdminClient();
@@ -14,7 +21,7 @@ export async function createProduct(input: ProductInput) {
     .single();
 
   if (error) throw new Error(error.message);
-  revalidatePath("/admin/products");
+  revalidateStorefront();
   return data;
 }
 
@@ -29,7 +36,7 @@ export async function updateProduct(id: string, input: Partial<ProductInput>) {
     .single();
 
   if (error) throw new Error(error.message);
-  revalidatePath("/admin/products");
+  revalidateStorefront();
   return data;
 }
 
@@ -38,7 +45,7 @@ export async function deleteProduct(id: string) {
   const { error } = await supabase.from("products").delete().eq("id", id);
 
   if (error) throw new Error(error.message);
-  revalidatePath("/admin/products");
+  revalidateStorefront();
 }
 
 export async function toggleProductStatus(id: string, status: "draft" | "published") {
@@ -49,5 +56,5 @@ export async function toggleProductStatus(id: string, status: "draft" | "publish
     .eq("id", id);
 
   if (error) throw new Error(error.message);
-  revalidatePath("/admin/products");
+  revalidateStorefront();
 }

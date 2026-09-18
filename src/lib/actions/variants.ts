@@ -4,6 +4,13 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { revalidatePath } from "next/cache";
 import { productVariantSchema, type ProductVariantInput } from "@/lib/validations/product";
 
+const STOREFRONT_PATHS = ["/", "/category/[slug]", "/product/[slug]"];
+
+function revalidateStorefront() {
+  STOREFRONT_PATHS.forEach((p) => revalidatePath(p));
+  revalidatePath("/admin/products");
+}
+
 export async function createVariant(input: ProductVariantInput) {
   const parsed = productVariantSchema.parse(input);
   const supabase = createAdminClient();
@@ -14,7 +21,7 @@ export async function createVariant(input: ProductVariantInput) {
     .single();
 
   if (error) throw new Error(error.message);
-  revalidatePath("/admin/products");
+  revalidateStorefront();
   return data;
 }
 
@@ -32,7 +39,7 @@ export async function updateVariant(
     .single();
 
   if (error) throw new Error(error.message);
-  revalidatePath("/admin/products");
+  revalidateStorefront();
   return data;
 }
 
@@ -41,5 +48,5 @@ export async function deleteVariant(id: string) {
   const { error } = await supabase.from("product_variants").delete().eq("id", id);
 
   if (error) throw new Error(error.message);
-  revalidatePath("/admin/products");
+  revalidateStorefront();
 }
