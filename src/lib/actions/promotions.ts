@@ -4,6 +4,13 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { revalidatePath } from "next/cache";
 import { promotionSchema, type PromotionInput } from "@/lib/validations/promotion";
 
+const STOREFRONT_PATHS = ["/", "/category/[slug]", "/product/[slug]"];
+
+function revalidateStorefront() {
+  STOREFRONT_PATHS.forEach((p) => revalidatePath(p));
+  revalidatePath("/admin/promotions");
+}
+
 export async function createPromotion(input: PromotionInput) {
   const parsed = promotionSchema.parse(input);
   const supabase = createAdminClient();
@@ -14,7 +21,7 @@ export async function createPromotion(input: PromotionInput) {
     .single();
 
   if (error) throw new Error(error.message);
-  revalidatePath("/admin/promotions");
+  revalidateStorefront();
   return data;
 }
 
@@ -32,7 +39,7 @@ export async function updatePromotion(
     .single();
 
   if (error) throw new Error(error.message);
-  revalidatePath("/admin/promotions");
+  revalidateStorefront();
   return data;
 }
 
@@ -41,7 +48,7 @@ export async function deletePromotion(id: string) {
   const { error } = await supabase.from("promotions").delete().eq("id", id);
 
   if (error) throw new Error(error.message);
-  revalidatePath("/admin/promotions");
+  revalidateStorefront();
 }
 
 export async function togglePromotionStatus(id: string, isActive: boolean) {
@@ -52,5 +59,5 @@ export async function togglePromotionStatus(id: string, isActive: boolean) {
     .eq("id", id);
 
   if (error) throw new Error(error.message);
-  revalidatePath("/admin/promotions");
+  revalidateStorefront();
 }
