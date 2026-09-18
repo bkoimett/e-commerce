@@ -3,20 +3,20 @@
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
+import ImageUploader from "@/components/admin/ImageUploader";
 
 export default function ProductForm() {
   const [name, setName] = useState("");
-const [slug, setSlug] = useState("");
-const [description, setDescription] = useState("");
-void setSlug;
-void setDescription;
+  const [slug, setSlug] = useState("");
+  void setSlug;
+  const [description, setDescription] = useState("");
+  void setDescription;
   const [categoryId, setCategoryId] = useState("");
   const [basePrice, setBasePrice] = useState("");
-const [images, setImages] = useState("");
-void setImages;
-const [status, setStatus] = useState<"draft" | "published">("draft");
+  const [images, setImages] = useState<string[]>([]);
+  const [status, setStatus] = useState<"draft" | "published">("draft");
   const [error, setError] = useState("");
-void error;
+  void error;
   const [loading, setLoading] = useState(false);
   const [categories, setCategories] = useState<
     Array<{ id: string; name: string }>
@@ -45,7 +45,7 @@ void error;
       description,
       category_id: categoryId,
       base_price: Number(basePrice),
-      images: images.split(",").map((s) => s.trim()).filter(Boolean),
+      images,
       status,
     });
 
@@ -60,7 +60,7 @@ void error;
     setDescription("");
     setCategoryId("");
     setBasePrice("");
-    setImages("");
+    setImages([]);
     setStatus("draft");
     window.location.reload();
   }
@@ -125,12 +125,12 @@ void error;
           />
         </div>
         <div className="md:col-span-2">
-          <label className="block text-sm font-medium mb-1">Images (comma-separated URLs)</label>
-          <input
-            value={images}
-            onChange={(e) => setImages(e.target.value)}
-            placeholder="https://example.com/img1.jpg, https://example.com/img2.jpg"
-            className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+          <label className="block text-sm font-medium mb-1">Images</label>
+          <ImageUploader
+            onImagesChange={setImages}
+            initialImages={images}
+            maxFiles={5}
+            maxSizeMB={5}
           />
         </div>
         <div>
