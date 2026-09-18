@@ -19,7 +19,7 @@ Once created, every commit and PR should reference the issue it belongs to.
   ```
   <type>/<issue-number>-<short-slug>
   ```
-  Examples: `feat/12-product-variant-schema`, `fix/27-promotion-date-validation`.
+  Examples: `feat/12-product-variant-schema`, `fix/14-promotion-date-validation`.
 - `<type>` matches the commit type table in §2.
 - Keep a branch scoped to its issue. If work reveals a second, unrelated
   issue, open a new issue and a new branch — don't scope-creep one branch.
@@ -58,9 +58,9 @@ Rules:
 
 Example sequence of commits for one issue:
 ```
-feat(db): add categories and products tables with RLS (#4)
-feat(db): add product_variants and promotions tables with RLS (#4)
-docs(db): note authenticated-role caveat for post-v2 accounts (#4)
+feat(db): add categories and products tables with RLS (#6)
+feat(db): add product_variants and promotions tables with RLS (#6)
+docs(db): note authenticated-role caveat for post-v2 accounts (#6)
 ```
 
 ## 3. Grouping commits and writing the PR description
@@ -72,12 +72,12 @@ ready to paste into GitHub's PR description field. Use this shape:
 ```
 ## Issue #<N>: <issue title>
 
-- feat(db): add categories and products tables with RLS (#4)
-- feat(db): add product_variants and promotions tables with RLS (#4)
-- docs(db): note authenticated-role caveat for post-v2 accounts (#4)
+- feat(db): add categories and products tables with RLS (#6)
+- feat(db): add product_variants and promotions tables with RLS (#6)
+- docs(db): note authenticated-role caveat for post-v2 accounts (#6)
 
 ---
-Closes #4
+Closes #6
 
 <one or two sentences summarizing what this PR does and any
 follow-up/TODO left for a later issue.>
@@ -147,11 +147,9 @@ size), RLS re-verification as `anon`, and production deploy.
 
 ## 6. Issues
 
-> Issue numbers below are the real GitHub numbers for Milestones 1–2
-> (#1–#8). Issues for Milestones 3–8 have **not been opened yet** — the
-> numbers shown there are placeholders and will shift to whatever numbers
-> GitHub assigns when the issues are actually created. Don't reference a
-> Milestone 3+ issue number in a commit until that issue exists.
+> Issue numbers below match the live issues in GitHub; each milestone's
+> issues are listed in ascending number order. Every commit references the
+> number of the issue it belongs to.
 
 ### Milestone 1: Project Setup & Infrastructure
 
@@ -197,120 +195,120 @@ redirecting to `/admin/login` otherwise.
 
 ### Milestone 3: Admin Dashboard — Catalog Management
 
-**#7 — Build category management UI**
+**#9 — Build category management UI**
 Create, edit, and list categories (including nesting) from the dashboard.
 
-**#8 — Build product create/edit form**
+**#10 — Build product create/edit form**
 Form for name, slug, description, category, base price, status
 (draft/published), backed by `productSchema`.
 
-**#9 — Build product image upload**
+**#11 — Build product image upload**
 Direct-to-Supabase-Storage upload from the product form, with file
 type/size validation client- and server-side, per `design.md` §6.
 
-**#10 — Build product variant management**
+**#12 — Build product variant management**
 Add/edit/remove variants (attributes, price override, stock, SKU) on a
 product, backed by `productVariantSchema`.
 
-**#11 — Build product list view with publish/unpublish**
+**#13 — Build product list view with publish/unpublish**
 Dashboard view listing all products with status, quick publish/unpublish
 toggle.
 
 ### Milestone 4: Admin Dashboard — Promotions
 
-**#12 — Build promotion create/edit form**
+**#14 — Build promotion create/edit form**
 Form for name, discount type/value, applies-to scope, date range, banner
 text, backed by `promotionSchema`.
 
-**#13 — Build promotion list view with manual end/deactivate**
+**#15 — Build promotion list view with manual end/deactivate**
 List active/scheduled/expired promotions with a manual override to end one
 early (`is_active` toggle).
 
-**#14 — Decide and implement the promotion tie-break rule**
+**#16 — Decide and implement the promotion tie-break rule**
 Resolve the open decision flagged in `design.md` §3 and §15 and
 `getEffectivePrice.ts`'s TODO: define what happens when multiple
 promotions could apply to the same product, and implement it.
 
-**#32 — Add cache invalidation on promotion/product save**
+**#17 — Add cache invalidation on promotion/product save**
 Call `revalidatePath`/`revalidateTag` for affected storefront pages when a
 promotion or product is saved, per `design.md` §10 — without this, the
 owner's changes won't visibly take effect.
 
 ### Milestone 5: Storefront — Browsing & Catalog
 
-**#15 — Build homepage with featured products and active promotion banner**
+**#18 — Build homepage with featured products and active promotion banner**
 Pull published products and any active storewide/category promotion
 banner text.
 
-**#16 — Build category and product listing pages**
+**#19 — Build category and product listing pages**
 Browse by category, matching the nested structure from `categories`.
 
-**#17 — Build product detail page with variant selector**
+**#20 — Build product detail page with variant selector**
 Variant selection (e.g. color/storage) updates displayed price and stock
 via `getEffectivePrice`.
 
-**#18 — Build cart (client-side state)**
+**#21 — Build cart (client-side state)**
 Add/remove/update quantity, persisted client-side only (no backend cart
 table in v1).
 
 ### Milestone 6: Checkout & Payments
 
-**#19 — Build guest checkout form**
+**#22 — Build guest checkout form**
 Contact info + shipping address form backed by `checkoutSchema`.
 
-**#20 — Implement IntaSend provider (initiate + webhook verification)**
+**#23 — Implement IntaSend provider (initiate + webhook verification)**
 Fill in the `IntaSendProvider` TODOs in `src/lib/payments/intasend.ts`:
 `initiate`, `verifyWebhook`, `checkStatus`.
 
-**#21 — Wire checkout route to create an order and start payment**
+**#24 — Wire checkout route to create an order and start payment**
 `app/api/checkout` creates the `orders`/`order_items` rows and calls
 `paymentProvider.initiate`.
 
-**#22 — Wire payment webhook to update order status**
+**#25 — Wire payment webhook to update order status**
 `app/api/webhooks/payments` verifies the incoming event and updates
 `orders.payment_status` via the admin client.
 
-**#23 — Build order confirmation page**
+**#26 — Build order confirmation page**
 Post-payment confirmation screen shown to the customer.
 
-**#33 — Implement atomic stock reservation at checkout**
+**#27 — Implement atomic stock reservation at checkout**
 Decrement `stock_quantity` with a conditional atomic update per
 `design.md` §8, failing the checkout cleanly if stock ran out between
 adding to cart and paying.
 
-**#34 — Make the payment webhook idempotent**
+**#28 — Make the payment webhook idempotent**
 Ensure `verifyWebhook` handling is safe to run twice for the same event —
 check `payment_status` before applying a change, per `design.md` §8.
 
-**#35 — Add unit tests for pricing and checkout totals**
+**#29 — Add unit tests for pricing and checkout totals**
 Cover `getEffectivePrice` and the checkout total calculation with tests,
 per `design.md` §11 — the one place a silent bug costs real money.
 
 ### Milestone 7: Order Management & Notifications
 
-**#24 — Build admin order list and detail view**
+**#30 — Build admin order list and detail view**
 List orders with contact info, items, total, payment status; detail view
 per order.
 
-**#25 — Choose and integrate a notification provider**
+**#31 — Choose and integrate a notification provider**
 Resolve the open decision in `design.md` §15: pick an email/SMS provider
 and send order confirmations on successful payment. Africa's Talking is
 the suggested option if SMS delivery to Kenyan numbers is prioritized.
 
 ### Milestone 8: Polish, QA & Launch
 
-**#26 — Mobile responsiveness pass**
+**#32 — Mobile responsiveness pass**
 Audit every storefront and dashboard page at common mobile breakpoints.
 
-**#27 — Performance pass**
+**#33 — Performance pass**
 Image optimization, bundle size check, server-component audit per
 `agents.md`'s "keep the storefront server-rendered" rule.
 
-**#28 — RLS re-verification before launch**
+**#34 — RLS re-verification before launch**
 Re-run every RLS scenario from `design.md` §4 as `anon`, confirm no
 regressions introduced during feature work.
 
-**#29 — Production deploy and smoke test**
+**#35 — Production deploy and smoke test**
 Deploy to production, place one real end-to-end test order (M-Pesa and
 card), confirm it appears correctly in the admin dashboard.
 
