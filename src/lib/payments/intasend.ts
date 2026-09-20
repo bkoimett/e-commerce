@@ -46,6 +46,16 @@ function splitName(fullName: string): [string, string] {
   return [first, last];
 }
 
+/**
+ * The parts of IntaSend's JSON responses we actually consume. Their API
+ * returns much more per endpoint, but surfacing only these keeps the
+ * provider typed without hand-authoring three external schemas.
+ */
+interface IntaSendResponse {
+  url?: string;
+  invoice?: { state?: string };
+}
+
 async function intasendFetch(
   path: string,
   init: {
@@ -54,7 +64,7 @@ async function intasendFetch(
     secretKey?: string;
     publicKey?: string;
   }
-): Promise<any> {
+): Promise<IntaSendResponse | null> {
   const headers: Record<string, string> = {
     Accept: "application/json",
     "Content-Type": "application/json",
@@ -139,7 +149,10 @@ export class IntaSendProvider implements PaymentProvider {
 
   async verifyWebhook(
     payload: unknown,
-    headers: Headers
+    // Part of the PaymentProvider interface — some providers authenticate
+    // via header (e.g. signature); IntaSend uses the challenge field only.
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    _headers: Headers
   ): Promise<PaymentEvent> {
     // IntaSend signs webhooks by echoing back the "challenge" string that
     // was configured in the dashboard (see docs "How to Setup Webhook").
