@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export default function AdminDashboardPage() {
   return (
     <div className="space-y-6">
@@ -27,6 +29,13 @@ export default function AdminDashboardPage() {
           <h3 className="font-medium">Promotions</h3>
           <p className="text-sm text-gray-500">Manage promotions and discounts</p>
         </a>
+        <Link
+          href="/admin/orders"
+          className="rounded-lg border p-4 hover:bg-gray-50"
+        >
+          <h3 className="font-medium">Orders</h3>
+          <p className="text-sm text-gray-500">View orders and payment status</p>
+        </Link>
       </nav>
     </div>
   );
