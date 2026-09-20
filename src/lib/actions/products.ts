@@ -4,7 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { revalidatePath } from "next/cache";
 import { productSchema, type ProductInput } from "@/lib/validations/product";
 
-const STOREFRONT_PATHS = ["/", "/category/[slug]", "/product/[slug]"];
+const STOREFRONT_PATHS = ["/", "/products", "/category/[slug]", "/product/[slug]"];
 
 function revalidateStorefront() {
   STOREFRONT_PATHS.forEach((p) => revalidatePath(p));
