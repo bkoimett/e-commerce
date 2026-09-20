@@ -8,13 +8,19 @@
 
 import type { PaymentProvider } from "./types";
 import { IntaSendProvider } from "./intasend";
+import { MockPaymentProvider } from "./mock";
 
 function resolveProvider(): PaymentProvider {
+  // "mock" powers local/QA checkout without IntaSend credentials; the mock
+  // still runs every real code path via our own simulated payment page
+  // (see mock.ts). Anything else uses the live provider.
   const providerName = process.env.PAYMENT_PROVIDER ?? "intasend";
 
   switch (providerName) {
     case "intasend":
       return new IntaSendProvider();
+    case "mock":
+      return new MockPaymentProvider();
     default:
       throw new Error(`Unknown PAYMENT_PROVIDER: ${providerName}`);
   }
