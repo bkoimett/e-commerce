@@ -12,6 +12,15 @@ export interface InitiateResult {
   reference: string;
 }
 
+/** How the customer chose to pay; drives which provider flow to start. */
+export type PaymentMethod = "mpesa" | "card";
+
+export interface InitiateOptions {
+  method: PaymentMethod;
+  /** Where the provider should send the customer after payment (hosted checkout). */
+  returnUrl?: string;
+}
+
 export type PaymentEventType = "payment_succeeded" | "payment_failed" | "unknown";
 
 export interface PaymentEvent {
@@ -24,7 +33,7 @@ export type PaymentStatusResult = "pending" | "paid" | "failed";
 
 export interface PaymentProvider {
   /** Start a payment for this order. Called from the checkout route. */
-  initiate(order: Order): Promise<InitiateResult>;
+  initiate(order: Order, options: InitiateOptions): Promise<InitiateResult>;
 
   /**
    * Verify and parse an incoming webhook from the provider.
