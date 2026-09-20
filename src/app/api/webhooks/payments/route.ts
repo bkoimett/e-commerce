@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { paymentProvider } from "@/lib/payments";
 import { releaseStock } from "@/lib/checkout/stock";
+import { sendOrderConfirmation } from "@/lib/notifications";
 import type { OrderLineInput } from "@/lib/pricing/checkout";
 
 export const runtime = "nodejs";
@@ -109,6 +110,12 @@ export async function POST(request: Request) {
       if (updateError) {
         return new NextResponse("Internal error", { status: 500 });
       }
+      // Confirmation goes out after the order is definitively paid. It runs
+      // its own DB read and must never fail the webhook — a notification
+      // hiccup shouldn't look like a failed payment. (WORKFLOW #31)
+      await sendOrderConfirmation(order.id).catch((err) => {
+        console.error(`[notifications] confirmation failed for ${order.id}:`, err);
+      });
       return NextResponse.json({ ok: true });
     }
 
