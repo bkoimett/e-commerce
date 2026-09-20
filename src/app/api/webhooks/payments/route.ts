@@ -1,20 +1,24 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { paymentProvider } from "@/lib/payments";
+import { releaseStock } from "@/lib/checkout/stock";
+import type { OrderLineInput } from "@/lib/pricing/checkout";
 
 export const runtime = "nodejs";
 
 /**
- * Payment webhook (WORKFLOW #25, DESIGN.md §8).
+ * Payment webhook (WORKFLOW #25 + #28, DESIGN.md §8).
  *
  * IntaSend calls this URL on every collection event (PENDING, COMPLETE,
- * FAILED…). Two rules keep it safe:
+ * FAILED…). Three rules keep it safe:
  *  - The provider's verifyWebhook authenticates the request before anything
  *    else (IntaSend echoes the dashboard "challenge").
  *  - Every event is treated as a possible DUPLICATE (AGENTS.md rule 9):
- *    we check the order's current payment_status before changing it, so a
- *    re-delivered webhook can never double-apply. Restocking on failure is
- *    handled in #28 on top of the guards below.
+ *    the order's current payment_status decides whether an event acts, so a
+ *    re-delivered webhook can never change the order twice.
+ *  - A failure transitions pending → failed and returns the reserved stock
+ *    (restock on failure, #28). A duplicate FAILED on an already-failed
+ *    order is a no-op, so stock is freed exactly once.
  */
 
 async function readPayload(request: Request): Promise<unknown | null> {
@@ -23,6 +27,39 @@ async function readPayload(request: Request): Promise<unknown | null> {
   } catch {
     return null;
   }
+}
+
+async function markFailedAndRestock(
+  orderId: string
+): Promise<{ error: string | null }> {
+  const supabase = createAdminClient();
+
+  // Flip the order first. If a crash happens between this and the restock,
+  // the order is honestly marked failed and stock can be reconciled
+  // manually — the alternative (restock first) risks overselling an order
+  // that later turns out PAID.
+  const { error: updateError } = await supabase
+    .from("orders")
+    .update({ payment_status: "failed" })
+    .eq("id", orderId);
+  if (updateError) return { error: updateError.message };
+
+  const { data: items, error: itemsError } = await supabase
+    .from("order_items")
+    .select("variant_id, quantity")
+    .eq("order_id", orderId);
+  if (itemsError) return { error: itemsError.message };
+
+  const lines: OrderLineInput[] = (items ?? []).map((i) => ({
+    variantId: i.variant_id,
+    quantity: i.quantity,
+  }));
+  try {
+    await releaseStock(lines);
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : "restock failed" };
+  }
+  return { error: null };
 }
 
 export async function POST(request: Request) {
@@ -60,7 +97,8 @@ export async function POST(request: Request) {
 
   switch (event.type) {
     case "payment_succeeded": {
-      // Idempotency: a paid order stays paid; don't re-apply on duplicates.
+      // Idempotency: a paid order stays paid — a duplicate COMPLETE must not
+      // "re-apply" (it would also trample a subsequent FAILED restock).
       if (order.payment_status === "paid") {
         return NextResponse.json({ ok: true, alreadyProcessed: true });
       }
@@ -75,16 +113,13 @@ export async function POST(request: Request) {
     }
 
     case "payment_failed": {
-      // Never downgrade an order that is already paid — a late, duplicated
-      // FAILED event must not un-pay a completed sale.
-      if (order.payment_status === "paid") {
+      // Never downgrade a paid order, and never restock twice: a FAILED
+      // order is already failed, so a re-delivered FAILED event is a no-op.
+      if (order.payment_status === "paid" || order.payment_status === "failed") {
         return NextResponse.json({ ok: true, alreadyProcessed: true });
       }
-      const { error: updateError } = await supabase
-        .from("orders")
-        .update({ payment_status: "failed" })
-        .eq("id", order.id);
-      if (updateError) {
+      const result = await markFailedAndRestock(order.id);
+      if (result.error) {
         return new NextResponse("Internal error", { status: 500 });
       }
       return NextResponse.json({ ok: true });
