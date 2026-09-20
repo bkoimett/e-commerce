@@ -107,14 +107,12 @@ export default function CartPage() {
               <dd>Calculated at checkout</dd>
             </div>
           </dl>
-          <button
-            type="button"
-            disabled
-            title="Checkout is the next milestone and isn't open yet"
-            className="mt-4 w-full rounded-lg bg-brand-blue px-4 py-2.5 text-sm font-medium text-white opacity-50"
+          <Link
+            href="/checkout"
+            className="mt-4 block w-full rounded-lg bg-brand-blue px-4 py-2.5 text-center text-sm font-medium text-white transition-colors hover:bg-brand-navy focus-visible:ring-2 focus-visible:ring-brand-blue focus-visible:outline-none"
           >
-            Checkout — coming soon
-          </button>
+            Checkout
+          </Link>
           <p className="mt-3 text-center text-xs text-muted-foreground">
             Pay with M-Pesa or card. Prices include any active discounts.
           </p>
